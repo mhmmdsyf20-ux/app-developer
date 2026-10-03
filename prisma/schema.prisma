@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  KADER
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id             String   @id @default(uuid())
+  emailOrPhone   String   @unique
+  passwordHash   String
+  name           String
+  role           Role     @default(PATIENT)
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  kaderProfile     KaderProfile?
+  doctorProfile    DoctorProfile?
+  balitaProfiles   BalitaProfile[]
+  lansiaProfiles   LansiaProfile[]
+  appointments     Appointment[]
+  aiConsultations  AIConsultation[]
+  referralLetters  ReferralLetter[]
+}
+
+model KaderProfile {
+  id           String @id @default(uuid())
+  userId       String @unique
+  posyanduName String
+  regionArea   String
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balitaCheckups BalitaCheckup[]
+  lansiaCheckups LansiaCheckup[]
+  healthEvents   HealthEvent[]
+}
+
+model BalitaProfile {
+  id            String   @id @default(uuid())
+  parentId      String
+  name          String
+  dob           DateTime
+  gender        String
+  birthWeight   Float
+  birthHeight   Float
+  
+  parent        User            @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  checkups      BalitaCheckup[]
+}
+
+model LansiaProfile {
+  id               String   @id @default(uuid())
+  userId           String
+  nik              String   @unique
+  name             String
+  dob              DateTime
+  address          String
+  emergencyContact String
+
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkups         LansiaCheckup[]
+}
+
+model BalitaCheckup {
+  id                 String   @id @default(uuid())
+  balitaId           String
+  kaderId            String
+  checkupDate        DateTime @default(now())
+  weight             Float
+  height             Float
+  headCircumference  Float
+  nutritionalStatus  String
+
+  balita             BalitaProfile @relation(fields: [balitaId], references: [id], onDelete: Cascade)
+  kader              KaderProfile  @relation(fields: [kaderId], references: [id], onDelete: Cascade)
+}
+
+model LansiaCheckup {
+  id            String   @id @default(uuid())
+  lansiaId      String
+  kaderId       String
+  checkupDate   DateTime @default(now())
+  systolicBp    Float
+  diastolicBp   Float
+  bloodGlucose  Float
+  cholesterol   Float
+  uricAcid      Float
+
+  lansia        LansiaProfile @relation(fields: [lansiaId], references: [id], onDelete: Cascade)
+  kader         KaderProfile  @relation(fields: [kaderId], references: [id], onDelete: Cascade)
+}
+
+model AIConsultation {
+  id                   String   @id @default(uuid())
+  patientId            String
+  persona              String
+  symptoms             String
+  preliminaryDiagnosis String
+  createdAt            DateTime @default(now())
+
+  patient              User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model DoctorProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  specialty     String
+  puskesmasName String
+  rating        Float    @default(0.0)
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+}
+
+model Appointment {
+  id            String            @id @default(uuid())
+  patientId     String
+  doctorId      String
+  scheduledDate DateTime
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+
+  patient       User          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor        DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model ReferralLetter {
+  id                  String   @id @default(uuid())
+  referralCode        String   @unique
+  patientId           String
+  originPuskesmas     String
+  destinationFacility String
+  diagnosis           String
+  createdAt           DateTime @default(now())
+
+  patient             User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model HealthEvent {
+  id               String   @id @default(uuid())
+  title            String
+  eventDate        DateTime
+  location         String
+  createdByKaderId String
+
+  kader            KaderProfile @relation(fields: [createdByKaderId], references: [id], onDelete: Cascade)
+}

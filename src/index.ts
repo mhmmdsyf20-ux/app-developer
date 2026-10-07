@@ -40,6 +40,10 @@ app.use('/api/lansia', lansiaRoutes);
 app.use('/api', appointmentRoutes);
 app.use('/api/ai', aiRoutes);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+export default app;
